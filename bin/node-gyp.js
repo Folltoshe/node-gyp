@@ -8,6 +8,7 @@ const envPaths = require('env-paths')
 const gyp = require('../')
 const log = require('../lib/log')
 const os = require('os')
+const path = require('path')
 
 /**
  * Process and execute the selected commands.
@@ -17,6 +18,7 @@ const prog = gyp()
 let completed = false
 prog.parseArgv(process.argv)
 prog.devDir = prog.opts.devdir
+prog.outputDir = path.resolve(prog.opts['output-dir'] || 'build')
 
 const homeDir = os.homedir()
 if (prog.devDir) {
@@ -26,8 +28,9 @@ if (prog.devDir) {
 } else {
   throw new Error(
     "node-gyp requires that the user's home directory is specified " +
-    'in either of the environmental variables HOME or USERPROFILE. ' +
-    'Overide with: --devdir /path/to/.node-gyp')
+      'in either of the environmental variables HOME or USERPROFILE. ' +
+      'Overide with: --devdir /path/to/.node-gyp'
+  )
 }
 
 if (prog.todo.length === 0) {
@@ -68,7 +71,7 @@ if (dir) {
   }
 }
 
-async function run () {
+async function run() {
   const command = prog.todo.shift()
   if (!command) {
     // done!
@@ -78,11 +81,11 @@ async function run () {
   }
 
   try {
-    const args = await prog.commands[command.name](command.args) ?? []
+    const args = (await prog.commands[command.name](command.args)) ?? []
 
     if (command.name === 'list') {
       if (args.length) {
-        args.forEach((version) => log.stdout(version))
+        args.forEach(version => log.stdout(version))
       } else {
         log.stdout('No node development files installed. Use `node-gyp install` to install a version.')
       }
@@ -116,22 +119,25 @@ process.on('uncaughtException', function (err) {
   process.exit(7)
 })
 
-function errorMessage () {
+function errorMessage() {
   // copied from npm's lib/utils/error-handler.js
   const os = require('os')
   log.error('System', os.type() + ' ' + os.release())
-  log.error('command', process.argv
-    .map(JSON.stringify).join(' '))
+  log.error('command', process.argv.map(JSON.stringify).join(' '))
   log.error('cwd', process.cwd())
   log.error('node -v', process.version)
   log.error('node-gyp -v', 'v' + prog.package.version)
 }
 
-function issueMessage () {
+function issueMessage() {
   errorMessage()
-  log.error('', ['Node-gyp failed to build your package.',
-    'Try to update npm and/or node-gyp and if it does not help file an issue with the package author.'
-  ].join('\n'))
+  log.error(
+    '',
+    [
+      'Node-gyp failed to build your package.',
+      'Try to update npm and/or node-gyp and if it does not help file an issue with the package author.',
+    ].join('\n')
+  )
 }
 
 // start running the given commands!
